@@ -1,0 +1,6 @@
+# 统一换行，保证 Windows 脚本在其他机器 clone 后仍可执行
+* text=auto
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.js text eol=lf
+*.md text eol=lf

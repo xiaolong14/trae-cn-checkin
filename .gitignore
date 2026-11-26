@@ -1,0 +1,10 @@
+# 本地数据与运行产物，不应提交
+*.db
+*.db-wal
+*.db-shm
+*.log
+
+# 依赖与系统文件
+node_modules/
+.DS_Store
+Thumbs.db
