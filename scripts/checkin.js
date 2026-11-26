@@ -196,7 +196,10 @@ function readAuthInfo(userDataDir) {
       if (!value) continue;
       const info = JSON.parse(decryptAuthValue(value));
       if (info && typeof info.token === 'string' && info.userId) {
-        return { info, storagePath };
+        // 签到领取接口要求携带客户端设备标识，缺失会返回 9004
+        const deviceId =
+          typeof storage['telemetry.devDeviceId'] === 'string' ? storage['telemetry.devDeviceId'] : '';
+        return { info, storagePath, deviceId };
       }
     } catch {
       // 单个键解密失败时继续尝试其他键
@@ -382,19 +385,22 @@ function tryOpenLedger() {
  * @param {string} pathname 接口路径
  * @param {string} token 登录令牌
  * @param {number} retries 网络错误或 5xx 时的短重试次数（本次尝试内部）
+ * @param {string} [deviceId] 客户端设备标识，缺失时接口可能返回 9004
  * @returns {Promise<{httpStatus: number, data: object}>}
  */
-async function postCheckinApi(pathname, token, retries) {
+async function postCheckinApi(pathname, token, retries, deviceId) {
   const url = `${API_BASE}${pathname}`;
   let lastError;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Cloud-IDE-JWT ${token}`,
+      };
+      if (deviceId) headers['x-device-id'] = deviceId;
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Cloud-IDE-JWT ${token}`,
-        },
+        headers,
         body: JSON.stringify({ req_source: REQ_SOURCE_IDE }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
@@ -432,8 +438,8 @@ function parseStatus(data) {
 }
 
 /** 执行一次签到状态查询 */
-async function fetchStatus(token) {
-  const response = await postCheckinApi(STATUS_PATH, token, STATUS_RETRIES);
+async function fetchStatus(token, deviceId) {
+  const response = await postCheckinApi(STATUS_PATH, token, STATUS_RETRIES, deviceId);
   if (response.httpStatus === 401 || response.httpStatus === 403) {
     const error = new Error('登录态已失效，请打开 Trae CN 重新登录');
     error.exitCode = EXIT_AUTH;
@@ -550,13 +556,13 @@ async function runCheckinAttempt({ attempt, maxAttempts, ledger, state }) {
   let userDataDir = '';
   try {
     userDataDir = resolveUserDataDir();
-    const { info } = readAuthInfo(userDataDir);
+    const { info, deviceId } = readAuthInfo(userDataDir);
     const { token, userId } = info;
     const today = localDate();
 
     let status;
     try {
-      status = await fetchStatus(token);
+      status = await fetchStatus(token, deviceId);
     } catch (error) {
       return finish(
         {
@@ -627,7 +633,7 @@ async function runCheckinAttempt({ attempt, maxAttempts, ledger, state }) {
     // 未签到：调用领取接口
     let claimData;
     try {
-      const response = await postCheckinApi(CLAIM_PATH, token, 0);
+      const response = await postCheckinApi(CLAIM_PATH, token, 0, deviceId);
       if (response.httpStatus === 401 || response.httpStatus === 403) {
         return finish(
           {
@@ -664,7 +670,7 @@ async function runCheckinAttempt({ attempt, maxAttempts, ledger, state }) {
       // 9004 常见于并发领取或已签到：回查状态确认是否实际已签到
       if (claimData.code === 9004) {
         try {
-          const latest = await fetchStatus(token);
+          const latest = await fetchStatus(token, deviceId);
           if (latest.checked_in) {
             if (ledger) {
               try {
@@ -706,7 +712,7 @@ async function runCheckinAttempt({ attempt, maxAttempts, ledger, state }) {
     let credits = typeof claimData.credits === 'number' ? claimData.credits : undefined;
     let extraCredits = typeof claimData.extra_credits === 'number' ? claimData.extra_credits : undefined;
     try {
-      const latest = await fetchStatus(token);
+      const latest = await fetchStatus(token, deviceId);
       if (typeof latest.credits === 'number') credits = latest.credits;
       if (typeof latest.extra_credits === 'number') extraCredits = latest.extra_credits;
     } catch {
@@ -836,11 +842,11 @@ async function runSelftest() {
     report.node = process.version;
 
     const userDataDir = resolveUserDataDir();
-    const { info, storagePath } = readAuthInfo(userDataDir);
+    const { info, storagePath, deviceId } = readAuthInfo(userDataDir);
     report.storagePath = storagePath;
     report.userId = info.userId;
 
-    const status = await fetchStatus(info.token);
+    const status = await fetchStatus(info.token, deviceId);
     report.api = {
       httpStatus: 200,
       enable: status.enable,

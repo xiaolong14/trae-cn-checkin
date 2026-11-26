@@ -1,5 +1,11 @@
 # 经验与纠正
 
+## 领取接口要求 x-device-id
+
+- 依据：2026-11-27 实测，缺少 `x-device-id` 时 `claim` 返回 9004“参数错误”；补上后返回 9074（限流），参数校验通过。
+- 做法：从 `storage.json` 的 `telemetry.devDeviceId` 读取设备标识，作为 `x-device-id` 发送；设备号不落盘、不打印。
+- 验证：同一时段对照请求，无头 9004、有头 9074；`--selftest` 与生产脚本均正常发送。
+
 ## GitHub API 写中文必须用 UTF-8 字节
 
 - 依据：PowerShell 5.1 的 `Invoke-RestMethod` 以 ASCII 发送字符串正文，中文会变成 `?`，仓库描述曾被写成“??????”。
