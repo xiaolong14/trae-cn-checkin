@@ -1,6 +1,6 @@
 # Trae CN 每日自动签到
 
-> 一句话让 AI 接手：**「安装 https://github.com/&lt;你的GitHub用户名&gt;/trae-cn-checkin 这个 Skill，然后开启 Trae CN 每天自动签到。」**
+> 一句话让 AI 接手：**「安装 https://github.com/xiaolong14/trae-cn-checkin 这个 Skill，然后开启 Trae CN 每天自动签到。」**
 
 读取本机 Trae CN 桌面端已登录账号的加密登录态，调用官方签到接口领取每日积分。签到时间每天在 08:00 至次日 02:00 内随机，失败自动重试，结果写入本地 SQLite。
 
@@ -28,14 +28,14 @@
 
 把仓库链接填进下面这句话，发给支持 Skill 的 AI 助手：
 
-> 安装 https://github.com/&lt;你的GitHub用户名&gt;/trae-cn-checkin 这个 Skill，然后开启 Trae CN 每天自动签到。
+> 安装 https://github.com/xiaolong14/trae-cn-checkin 这个 Skill，然后开启 Trae CN 每天自动签到。
 
 AI 会读取本 README，完成克隆、依赖检查、登录态自检和计划任务注册。同样的说明也写在 [SKILL.md](SKILL.md) 里，安装后 AI 可继续按技能文档维护。
 
 ### 方式二：手动安装
 
 ```powershell
-git clone https://github.com/<你的GitHub用户名>/trae-cn-checkin "$env:USERPROFILE\.agents\skills\trae-cn-checkin"
+git clone https://github.com/xiaolong14/trae-cn-checkin "$env:USERPROFILE\.agents\skills\trae-cn-checkin"
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\.agents\skills\trae-cn-checkin\scripts\install.ps1"
 ```
 

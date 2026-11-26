@@ -16,7 +16,7 @@ description: "自动完成 Trae CN 桌面端（TraeWork / Trae Code）每日签�
 如果本地还没有技能目录，先把本仓库克隆到技能目录（仓库地址见 README）；已有目录时跳过：
 
 ```powershell
-git clone <仓库地址> "$env:USERPROFILE\.agents\skills\trae-cn-checkin"
+git clone https://github.com/xiaolong14/trae-cn-checkin "$env:USERPROFILE\.agents\skills\trae-cn-checkin"
 ```
 
 ### 1. 检查依赖
