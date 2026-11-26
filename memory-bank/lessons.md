@@ -1,10 +1,13 @@
 # 经验与纠正
 
-## 领取接口要求 x-device-id
+## 领取接口要求真实设备号 x-device-id
 
-- 依据：2026-11-27 实测，缺少 `x-device-id` 时 `claim` 返回 9004“参数错误”；补上后返回 9074（限流），参数校验通过。
-- 做法：从 `storage.json` 的 `telemetry.devDeviceId` 读取设备标识，作为 `x-device-id` 发送；设备号不落盘、不打印。
-- 验证：同一时段对照请求，无头 9004、有头 9074；`--selftest` 与生产脚本均正常发送。
+- 依据：2026-11-27 实测，`claim` 无设备头返回 9004；带 `telemetry.devDeviceId`（UUID）返回 9074；带 `storage.json` 键名 `iCubeAuthInfo://icube-dc:<数字>` 中的真实设备号后返回 `code:0`。
+- 做法：`extractDeviceId()` 从键名提取并校验 12-20 位十进制数字；取不到时直接失败并提示用户打开客户端登录，不发送占位值。设备号不落盘、不打印。
+- 验证：三点对照（无头 9004 / UUID 9074 / 真实号 `code:0`），随后状态接口 `checked_in: true`。
+- 纠正：早期把 `telemetry.devDeviceId` 当作设备号是错的；UUID 与客户端注册的设备号不是同一个值。
+- 参考：[L0NE-6/Trae-AutoCheckin](https://github.com/L0NE-6/Trae-AutoCheckin) 最新版每轮生成临时设备号；本项目不采用，避免被判定为规避设备指纹。
+- 失败勿连发：9074 时当场连续 claim 会延长冷却窗口，应按任务级间隔重试或等下一轮。
 
 ## GitHub API 写中文必须用 UTF-8 字节
 

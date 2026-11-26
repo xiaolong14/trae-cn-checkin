@@ -16,12 +16,15 @@
 - README 与 SKILL.md 中的仓库地址占位符已替换为真实地址。
 - 修正 GitHub 仓库描述乱码（API 写入编码问题），线上描述已为中文。
 
-## 当前阻塞
+## 最近一次修复（2026-11-27）
 
-- 2026-11-27 00:xx 手动签到被服务端限流：`9074 当前参与用户太多，请稍后再试`；状态接口显示今日未签到。
-- 脚本已补齐 `x-device-id`（取自 `telemetry.devDeviceId`），修复提交 `df572ef` 已推送；计划任务下次运行 2026-11-27 12:11:30，会自动重试。
+- 根因：`x-device-id` 取值错误。`telemetry.devDeviceId` 是 UUID，服务端不认，claim 返回 9074；真正可用的是 `storage.json` 键名 `iCubeAuthInfo://icube-dc:<数字>` 中的真实设备号。
+- 修复：`checkin.js` 新增 `extractDeviceId()`，缺失设备号时直接返回 `missing_device_id`；claim 兼容 9004/9095 已签到码。
+- 验证：真实设备号 claim 返回 `{"code":0,"message":"success"}`；官方脚本 `--json --selftest` 显示 `checkedIn: true`、余额 100；正式库记录今日已签到（`manual`，尝试 1/1）。
+- 参考 [L0NE-6/Trae-AutoCheckin](https://github.com/L0NE-6/Trae-AutoCheckin) 后确认：其“每轮生成临时 16 位设备号”的做法不采用，避免被判定为规避设备指纹。
 
 ## 下一步
 
 - 在全新机器按 README 走一遍 clone → `install.ps1` → 触发器与任务验证（尚未实测）。
 - 后续官方客户端更新按 `references/maintenance.md` 的五步流程回归。
+- 如需进一步贴近官方客户端，可评估补充 `X-User-Region`、`User-Agent`、`x-device-type` 等设备头；当前仅 `x-device-id` 已验证可成功领取。

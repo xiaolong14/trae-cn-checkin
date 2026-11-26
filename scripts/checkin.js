@@ -185,6 +185,26 @@ function resolveUserDataDir() {
   throw new Error('未找到 Trae 登录态文件，请通过 TRAE_USER_DATA_DIR 指定用户数据目录');
 }
 
+/**
+ * 从 storage.json 中提取客户端真实注册的设备号。
+ * 客户端把设备号放在键名 `iCubeAuthInfo://icube-dc:<数字>` 中，
+ * 少数版本放在同名键的值里；必须是 12-20 位十进制数字。
+ * 注意：`telemetry.devDeviceId` 是 UUID，不是签到接口认可的设备号，使用它会被拒绝。
+ */
+function extractDeviceId(storage) {
+  const prefix = 'iCubeAuthInfo://icube-dc:';
+  for (const [key, value] of Object.entries(storage)) {
+    if (key.startsWith(prefix)) {
+      const candidate = key.slice(prefix.length).trim();
+      if (/^\d{12,20}$/.test(candidate)) return candidate;
+    } else if (key.replace(/:+$/, '') === 'iCubeAuthInfo://icube-dc') {
+      const candidate = String(value ?? '').trim();
+      if (/^\d{12,20}$/.test(candidate)) return candidate;
+    }
+  }
+  return '';
+}
+
 /** 从 storage.json 中读取并解析登录态（含 accessToken） */
 function readAuthInfo(userDataDir) {
   const storagePath = path.join(userDataDir, 'User', 'globalStorage', 'storage.json');
@@ -196,9 +216,7 @@ function readAuthInfo(userDataDir) {
       if (!value) continue;
       const info = JSON.parse(decryptAuthValue(value));
       if (info && typeof info.token === 'string' && info.userId) {
-        // 签到领取接口要求携带客户端设备标识，缺失会返回 9004
-        const deviceId =
-          typeof storage['telemetry.devDeviceId'] === 'string' ? storage['telemetry.devDeviceId'] : '';
+        const deviceId = extractDeviceId(storage);
         return { info, storagePath, deviceId };
       }
     } catch {
@@ -560,6 +578,19 @@ async function runCheckinAttempt({ attempt, maxAttempts, ledger, state }) {
     const { token, userId } = info;
     const today = localDate();
 
+    if (!deviceId) {
+      return finish(
+        {
+          stage: 'config',
+          result: 'missing_device_id',
+          userId,
+          message:
+            '未找到客户端真实设备号（storage.json 的 iCubeAuthInfo://icube-dc:<数字>），请打开 Trae CN 登录后重试',
+        },
+        EXIT_FAIL
+      );
+    }
+
     let status;
     try {
       status = await fetchStatus(token, deviceId);
@@ -667,8 +698,8 @@ async function runCheckinAttempt({ attempt, maxAttempts, ledger, state }) {
     }
 
     if (typeof claimData.code === 'number' && claimData.code !== 0) {
-      // 9004 常见于并发领取或已签到：回查状态确认是否实际已签到
-      if (claimData.code === 9004) {
+      // 9004/9095 表示本设备今日已签到：回查状态确认，不当作失败
+      if (claimData.code === 9004 || claimData.code === 9095) {
         try {
           const latest = await fetchStatus(token, deviceId);
           if (latest.checked_in) {
@@ -687,7 +718,7 @@ async function runCheckinAttempt({ attempt, maxAttempts, ledger, state }) {
                 checkedIn: true,
                 credits: latest.credits,
                 extraCredits: latest.extra_credits,
-                message: '今日已签到（领取接口返回 9004，状态确认已领取）',
+                message: `今日已签到（领取接口返回 ${claimData.code}，状态确认已领取）`,
               },
               EXIT_OK
             );

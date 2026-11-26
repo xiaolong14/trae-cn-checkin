@@ -8,11 +8,13 @@
 - 项目记忆：`5aadf55 docs: 建立项目记忆与协作规范`。
 - GitHub 发布：公开仓库 <https://github.com/xiaolong14/trae-cn-checkin>，`main` 已推送。
 
-## 进行中（2026-11-27）
+## 已完成（2026-11-27）
 
-- 领取接口新增 `x-device-id` 要求：脚本已从 `telemetry.devDeviceId` 读取并发送，修复提交 `df572ef` 已推送。
-- 手动签到多次返回 9074（服务端限流），今日尚未签到；计划任务下次运行 2026-11-27 12:11:30，自动重试。
-- 对照验证：无设备头 9004，有设备头 9074，确认设备标识为必需项。
+- 定位真因：领取接口的 `x-device-id` 必须是客户端注册的真实设备号，来源为 `storage.json` 键名 `iCubeAuthInfo://icube-dc:<数字>`；`telemetry.devDeviceId`（UUID）会被拒绝。
+- 修复 `checkin.js`：新增 `extractDeviceId()` 与 `missing_device_id` 快速失败；claim 兼容 9004/9095 已签到码。
+- 真机验证：真实设备号 claim 返回 `{"code":0,"message":"success"}`；`--json --selftest` 显示 `checkedIn: true`、余额 100；正式库记录 `2026-11-27 00:33:49 manual 已签到 余额 100 尝试 1/1`。
+- 参考对照：无设备头 9004、UUID 设备号 9074、真实设备号 `code:0`，三点验证设备号来源正确。
+- 决策：不采用参考仓库的临时设备号方案。
 
 ## 已验证
 

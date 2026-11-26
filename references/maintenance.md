@@ -47,7 +47,7 @@ $s.Substring([Math]::Max(0,$i-1500), 3000)
 | 领取接口 | `POST /trae/api/v2/ug/checkin_credits/claim` | 同上 |
 | 请求体 | `{"req_source":1}` | 同上 |
 | 鉴权头 | `Authorization: Cloud-IDE-JWT <accessToken>` | 同上 |
-| 设备标识头 | `x-device-id: <telemetry.devDeviceId>` | `readAuthInfo()` |
+| 设备标识头 | `x-device-id: <iCubeAuthInfo://icube-dc:<数字> 的数字部分>` | `extractDeviceId()` |
 | 登录态键 | `iCubeAuthInfo://icube.cloudide` | `readAuthInfo()` |
 | 密文魔数 | `74 63 05 10 00 00`（`tc` + 版本） | 协议常量区 `MAGIC` |
 | 盐值长度 | 32 字节 | `decryptAuthValue()` |
@@ -119,8 +119,9 @@ node "$env:USERPROFILE\.agents\skills\trae-cn-checkin\scripts\checkin.js" --hist
 
 - **先查询再领取**：客户端本身也是先 `status` 再 `claim`，这是最可靠的防重方式。
 - **本地日期表只做兜底**：`daily_claims` 防止状态接口短暂异常时重复领取，不作为服务端事实来源。
-- **9004 分两种**：缺少 `x-device-id`（参数错误）或已签到/并发领取；先看 `message` 与 `--history`，脚本对后者回查状态。
-- **9074 是限流**：`当前参与用户太多`，属于可恢复失败，交给任务级重试，不要高频手动重试。
+- **设备号必须用客户端真实注册值**：`storage.json` 的键名 `iCubeAuthInfo://icube-dc:<12-20 位数字>`，数字部分即 `x-device-id`。`telemetry.devDeviceId` 是 UUID，服务端不认，带上会返回 9074；缺失则返回 9004。不要把随机数当设备号发送，那属于规避设备指纹，风险更高。
+- **9004 / 9095 是已签到**：领取接口在“本设备今日已签到”或并发领取时返回 9004（部分版本 9095）；脚本回查 `status`，`checked_in: true` 即按成功处理。
+- **9074 是设备号不被认可或限流**：`当前参与用户太多` 时可恢复，交给任务级重试；设备号错误时也会返回它，先核对 `x-device-id` 来源。不要当场连续 claim，连续失败会延长冷却窗口。
 - **余额不等于当日收益**：`credits` 记录的是当前余额，统计只累计签到天数，不累计积分，避免误导。
 - **交互式计划任务**：必须能读取当前用户的 `%APPDATA%`，所以使用 `Interactive` 登录类型，而不是 SYSTEM。
 - **随机时间用计划任务原生能力**：`New-ScheduledTaskTrigger -Daily -At 08:00` 加 `RandomDelay='PT18H'`，由 Task Scheduler 每次触发重新随机，覆盖 08:00 至次日 02:00，脚本无需常驻。
@@ -153,7 +154,7 @@ node "$env:USERPROFILE\.agents\skills\trae-cn-checkin\scripts\checkin.js" --hist
 | 2026-11-26 | 1.107.1 | 整体重试通过：临时库 + 无效接口，`--retries=2 --retry-delay-seconds=1` 产生 3 次尝试（耗时 11.3 秒），3 条记录均带 `attempt/max_attempts` |
 | 2026-11-26 | 1.107.1 | 随机窗口任务通过：`StartBoundary` 08:00、`RandomDelay` `PT18H`、动作 `--retries=2 --retry-delay-seconds=600`、时限 `PT35M`；手动启动 `LastTaskResult=0`，记录 `尝试 1/3` |
 | 2026-11-26 | 1.107.1 | 旧库迁移通过：`checkin_runs` 自动新增 `attempt`、`max_attempts` 列，历史数据保留 |
-| 2026-11-27 | 1.107.1 | 设备标识验证：领取接口缺少 `x-device-id` 返回 9004，补齐后返回 9074（限流）；确认设备头为必需项，待限流恢复后完成签到 |
+| 2026-11-27 | 1.107.1 | 设备标识验证：缺少 `x-device-id` 返回 9004；用 `telemetry.devDeviceId`（UUID）返回 9074；改用 `iCubeAuthInfo://icube-dc:<16 位数字>` 中的真实设备号后 `claim` 返回 `{"code":0,"message":"success"}`，状态显示已签到、余额 100。参考实现：[L0NE-6/Trae-AutoCheckin](https://github.com/L0NE-6/Trae-AutoCheckin)（其最新版每轮生成临时设备号，本项目不采用） |
 
 ## 7. 已知限制
 

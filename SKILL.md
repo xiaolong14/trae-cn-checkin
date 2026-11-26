@@ -165,8 +165,8 @@ node "$env:USERPROFILE\.agents\skills\trae-cn-checkin\scripts\checkin.js" --hist
 
 - 登录态键：`iCubeAuthInfo://icube.cloudide`；加密格式：Base64 后前 6 字节 `74 63 05 10 00 00`，随后 32 字节盐值，AES-128-CBC 密文。
 - 密钥/IV：`SHA-512(盐值)` 与固定 64 字节掩码拼接后再 `SHA-512`，前 16 字节密钥、接着 16 字节 IV；明文前 64 字节为 `SHA-512(明文)` 校验。
-- 签到接口：`POST /trae/api/v2/ug/checkin_credits/status`、`POST /trae/api/v2/ug/checkin_credits/claim`；请求头 `Authorization: Cloud-IDE-JWT <token>`、`x-device-id: <telemetry.devDeviceId>`；请求体 `{"req_source":1}`。
-- 2026-11-27 起领取接口要求 `x-device-id`，缺失会返回 9004“参数错误”；状态接口不强制。设备标识从 `storage.json` 的 `telemetry.devDeviceId` 读取，不额外采集硬件信息。
+- 签到接口：`POST /trae/api/v2/ug/checkin_credits/status`、`POST /trae/api/v2/ug/checkin_credits/claim`；请求头 `Authorization: Cloud-IDE-JWT <token>`、`x-device-id: <客户端真实设备号>`；请求体 `{"req_source":1}`。
+- 2026-11-27 起领取接口强制校验 `x-device-id`，缺失返回 9004，伪造或 UUID 返回 9074；状态接口不强制。真实设备号是 `storage.json` 中键名 `iCubeAuthInfo://icube-dc:<12-20 位数字>` 的数字部分；`telemetry.devDeviceId` 是 UUID，服务端不认，不能用来签到。脚本只读取该键，不采集硬件信息。
 
 ## 七、安全约束
 
@@ -187,8 +187,9 @@ node "$env:USERPROFILE\.agents\skills\trae-cn-checkin\scripts\checkin.js" --hist
 |---|---|
 | 安装脚本提示 Node 版本过低 | 升级到 Node.js 22.5+，重开终端 |
 | 自检退出码 2 / HTTP 401、403 | 打开 Trae CN 重新登录后重试 |
-| 返回 `code` 9004 | 缺少 `x-device-id` 或并发领取；脚本已自动带设备标识，仍出现时先看 `--history` |
-| 返回 `code` 9074 | 服务端限流“参与用户太多”，稍后重试；任务级重试会自动处理 |
+| 返回 `code` 9004 / 9095 | 本设备今日已签到（或并发领取）；脚本回查 `status` 后按已签到处理 |
+| 返回 `code` 9074 | 设备号不被认可或服务端限流“参与用户太多”；先确认发出的是 `iCubeAuthInfo://icube-dc` 的真实数字号，再交给任务级重试。不要连续手动 claim，会延长冷却窗口 |
+| 提示 `missing_device_id` | `storage.json` 里没有 `iCubeAuthInfo://icube-dc:<数字>`，打开 Trae CN 登录一次后重试 |
 | 找不到 `storage.json` | 用 `TRAE_USER_DATA_DIR` 指定用户数据目录 |
 | 计划任务未执行 | `Get-ScheduledTaskInfo -TaskName TraeCNCheckin` 查看上次结果；确认任务为 `Ready`、用户已登录 |
 | 任务结果 267011 / 未启动 | 随机延迟尚未到点，看 `NextRunTime` 是否在未来窗口内 |
@@ -204,4 +205,4 @@ node "$env:USERPROFILE\.agents\skills\trae-cn-checkin\scripts\checkin.js" --hist
 - 2026-11-26：计划任务以 `--trigger=auto` 运行，`checkin_runs` 正确记录触发来源。
 - 2026-11-26：临时库 + 无效接口验证重试：`--retries=2 --retry-delay-seconds=1` 共 3 次尝试、总耗时 11.3 秒，写入 3 条 `attempt/max_attempts` 记录。
 - 2026-11-26：计划任务改为随机窗口版：触发器 `StartBoundary` 08:00、`RandomDelay` `PT18H`，`NextRunTime` 落在次日 01:46（窗口内）；动作参数含 `--retries=2 --retry-delay-seconds=600`，时限 `PT35M`，手动启动 `LastTaskResult=0` 并记录 `尝试 1/3`。
-- 2026-11-27：领取接口缺少 `x-device-id` 时返回 9004；补齐后返回 9074（服务端限流），确认设备标识为必需项。
+- 2026-11-27：领取接口缺少 `x-device-id` 返回 9004；用 `telemetry.devDeviceId`（UUID）返回 9074；改用 `iCubeAuthInfo://icube-dc:<16 位数字>` 中的真实设备号后 `claim` 返回 `{"code":0,"message":"success"}`。随后 `--json --selftest` 显示 `checkedIn: true`、余额 100，正式库记录 `manual 已签到 余额 100`。结论：必须使用客户端真实注册数字设备号；参考 [L0NE-6/Trae-AutoCheckin](https://github.com/L0NE-6/Trae-AutoCheckin) 的“每轮生成临时设备号”方案不采用，避免被判定为规避设备指纹。
