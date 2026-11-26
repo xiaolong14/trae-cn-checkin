@@ -1,5 +1,12 @@
 # 经验与纠正
 
+## GitHub 发布可用已存 HTTPS 凭据
+
+- 适用：本机需要发布到 GitHub，但没有安装 `gh`，SSH 密钥也未注册。
+- 做法：用 `git credential fill` 读取已存凭据验证账号，REST API 创建空仓库，再 `git push -u origin main`。
+- 注意：令牌不打印、不落盘；网络间歇失败时，以 push 输出的 `[new branch]` 和本地 `origin/main` 作为已推送依据，稍后重试 `git ls-remote` 复核。
+- 验证：GitHub 仓库页可访问，`git ls-remote origin refs/heads/main` 与本地 HEAD 一致。
+
 ## 每次开工先读根规范与工作记忆
 
 - 适用：所有开发任务。

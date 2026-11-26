@@ -1,6 +1,6 @@
 # 当前任务
 
-当前目标：将 trae-cn-checkin 发布为公开 GitHub 仓库，并保持本机每日自动签到运行。
+当前目标：维护 trae-cn-checkin 公开仓库，并保持本机每日自动签到运行。
 
 ## 验收条件
 
@@ -12,8 +12,10 @@
 
 - 初始化 git 仓库并提交 `81f1218`。
 - README、`.gitignore`、`.gitattributes` 就绪，个人路径已脱敏。
+- 发布到 GitHub：<https://github.com/xiaolong14/trae-cn-checkin>，`main` 已推送（`eaa42a5`）。
+- README 与 SKILL.md 中的仓库地址占位符已替换为真实地址。
 
 ## 下一步
 
-- 用户提供 GitHub 用户名后，替换 README 与 SKILL.md 中的 `<你的GitHub用户名>` 占位符并提交。
-- 在 GitHub 创建空仓库后执行 `git remote add origin ...` 和 `git push -u origin main`。
+- 在全新机器按 README 走一遍 clone → `install.ps1` → 触发器与任务验证（尚未实测）。
+- 后续官方客户端更新按 `references/maintenance.md` 的五步流程回归。
