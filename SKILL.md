@@ -166,7 +166,7 @@ node "$env:USERPROFILE\.agents\skills\trae-cn-checkin\scripts\checkin.js" --hist
 - 登录态键：`iCubeAuthInfo://icube.cloudide`；加密格式：Base64 后前 6 字节 `74 63 05 10 00 00`，随后 32 字节盐值，AES-128-CBC 密文。
 - 密钥/IV：`SHA-512(盐值)` 与固定 64 字节掩码拼接后再 `SHA-512`，前 16 字节密钥、接着 16 字节 IV；明文前 64 字节为 `SHA-512(明文)` 校验。
 - 签到接口：`POST /trae/api/v2/ug/checkin_credits/status`、`POST /trae/api/v2/ug/checkin_credits/claim`；请求头 `Authorization: Cloud-IDE-JWT <token>`、`x-device-id: <客户端真实设备号>`；请求体 `{"req_source":1}`。
-- 2026-11-27 起领取接口强制校验 `x-device-id`，缺失返回 9004，伪造或 UUID 返回 9074；状态接口不强制。真实设备号是 `storage.json` 中键名 `iCubeAuthInfo://icube-dc:<12-20 位数字>` 的数字部分；`telemetry.devDeviceId` 是 UUID，服务端不认，不能用来签到。脚本只读取该键，不采集硬件信息。
+- 2026-11-27 起领取接口强制校验 `x-device-id`，缺失返回 9004，使用 UUID 或错误设备号返回 9074；状态接口不强制。真实设备号是 `storage.json` 中键名 `iCubeAuthInfo://icube-dc:<12-20 位数字>` 的数字部分；`telemetry.devDeviceId` 是 UUID，服务端不认，不能用来签到。脚本只读取该键，不采集硬件信息。
 
 ## 七、安全约束
 
