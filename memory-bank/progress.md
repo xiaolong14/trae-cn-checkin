@@ -15,6 +15,7 @@
 - 旧库迁移：`checkin_runs` 自动新增 `attempt`、`max_attempts`，历史数据保留。
 - 公开前检查：`git grep 15583` 无结果，目录内无数据库与日志。
 - 推送：`git push` 输出 `[new branch] main -> main` 与 `eaa42a5..1cadf69 main -> main`。
+- 仓库描述乱码修正：PATCH 后 GET 校验 `match=True`、问号数 0。
 
 ## 待验证
 

@@ -1,5 +1,11 @@
 # 经验与纠正
 
+## GitHub API 写中文必须用 UTF-8 字节
+
+- 依据：PowerShell 5.1 的 `Invoke-RestMethod` 以 ASCII 发送字符串正文，中文会变成 `?`，仓库描述曾被写成“??????”。
+- 做法：用 `[Text.Encoding]::UTF8.GetBytes()` 发送字节，或改用 Python/curl 明确 UTF-8；写入后立即 GET 比对原文。
+- 验证：`GET /repos/{owner}/{repo}` 返回的 `description` 与预期完全一致，问号数为 0。
+
 ## GitHub 发布可用已存 HTTPS 凭据
 
 - 适用：本机需要发布到 GitHub，但没有安装 `gh`，SSH 密钥也未注册。
