@@ -6,7 +6,7 @@
 - 仓库准备：README、SKILL.md、references/maintenance.md、6 个脚本、`.gitignore`、`.gitattributes`。
 - 首次提交：`81f1218 feat: 初始化 Trae CN 每日自动签到技能仓库`。
 - 项目记忆：`5aadf55 docs: 建立项目记忆与协作规范`。
-- GitHub 发布：公开仓库 <https://github.com/xiaolong14/trae-cn-checkin>，`main` 推送至 `eaa42a5`。
+- GitHub 发布：公开仓库 <https://github.com/xiaolong14/trae-cn-checkin>，`main` 已推送。
 
 ## 已验证
 
@@ -14,7 +14,7 @@
 - 正式任务：`StartBoundary` 08:00、`RandomDelay` `PT18H`、动作含 `--retries=2 --retry-delay-seconds=600`、时限 `PT35M`；手动启动 `LastTaskResult=0`。
 - 旧库迁移：`checkin_runs` 自动新增 `attempt`、`max_attempts`，历史数据保留。
 - 公开前检查：`git grep 15583` 无结果，目录内无数据库与日志。
-- 推送：输出 `[new branch] main -> main`，本地 `origin/main` 指向 `eaa42a5`。
+- 推送：`git push` 输出 `[new branch] main -> main` 与 `eaa42a5..1cadf69 main -> main`。
 
 ## 待验证
 

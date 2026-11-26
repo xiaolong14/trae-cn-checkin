@@ -12,7 +12,7 @@
 
 - 初始化 git 仓库并提交 `81f1218`。
 - README、`.gitignore`、`.gitattributes` 就绪，个人路径已脱敏。
-- 发布到 GitHub：<https://github.com/xiaolong14/trae-cn-checkin>，`main` 已推送（`eaa42a5`）。
+- 发布到 GitHub：<https://github.com/xiaolong14/trae-cn-checkin>，`main` 已推送。
 - README 与 SKILL.md 中的仓库地址占位符已替换为真实地址。
 
 ## 下一步
